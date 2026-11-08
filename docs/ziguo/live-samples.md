@@ -13,8 +13,16 @@
 在线集成测试默认跳过，只有显式 `--dart-define=ZIGUO_LIVE_X=true` 才请求 X。测试复用设备上的应用会话；不要将 Cookie 或账户数据放进命令、仓库或 CI secrets。
 
 ```bash
+./tool/ziguo/build_android.sh --target-platform android-arm64
+cp build/app/outputs/flutter-apk/app-debug.apk build/ziguo-p0-debug.apk
+adb -s DEVICE_ID install -r build/ziguo-p0-debug.apk
+# 在设备内完成正常登录，再执行在线测试。
 fvm flutter test integration_test/ziguo/content_probe_test.dart \
   -d DEVICE_ID --dart-define=ZIGUO_LIVE_X=true
+# 无论测试成功与否，都恢复普通应用入口；install -r 保留本地会话。
+adb -s DEVICE_ID install -r build/ziguo-p0-debug.apk
 ```
+
+集成测试会临时替换应用入口，结束后需执行最后一行恢复。不要卸载或清除应用数据来恢复界面，否则会丢失本地会话。示例产物针对 arm64 设备；不同架构使用对应的构建目标。
 
 视频必须实际播放并推进至少 500 毫秒，图片必须成功解码，正文必须完整非空，所有样本类型都通过才算在线测试通过。只打印帖子 ID、内容类型、状态和项目数量；不打印正文或媒体直链。
