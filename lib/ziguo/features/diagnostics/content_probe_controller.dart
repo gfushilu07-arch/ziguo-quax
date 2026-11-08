@@ -76,7 +76,8 @@ class ContentProbeController extends Store<ProbeState> {
   void selectKind(ContentRepresentation value) {
     kind = value;
     _operation++;
-    update(const ProbeState());
+    // The selected kind changes even when the empty state is identical.
+    update(const ProbeState(), force: true);
   }
 
   Future<void> inspect(String input, ContentRepresentation kind) async {

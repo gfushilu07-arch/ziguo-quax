@@ -39,6 +39,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('小说 · 正文').last);
     await tester.pumpAndSettle();
+    expect(
+      tester.widget<DropdownButton<ContentRepresentation>>(
+        find.byType(DropdownButton<ContentRepresentation>),
+      ).value,
+      ContentRepresentation.text,
+      reason: 'The selected type must update before any network request',
+    );
     await tester.enterText(
       find.byType(TextField),
       'https://x.com/example/status/123',
