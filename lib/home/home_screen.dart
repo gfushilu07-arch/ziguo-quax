@@ -16,6 +16,7 @@ import 'package:quax/search/search.dart';
 import 'package:quax/subscriptions/subscriptions.dart';
 import 'package:quax/trends/trends_screen.dart';
 import 'package:quax/ui/errors.dart';
+import 'package:quax/ziguo/bootstrap/ziguo_navigation.dart';
 
 typedef NavigationTitleBuilder = String Function(BuildContext context);
 
@@ -29,6 +30,8 @@ class NavigationPage {
 }
 
 final List<NavigationPage> defaultHomePages = [
+  if (ziguoContentProbeEnabled)
+    NavigationPage('ziguo-probe', (_) => '内容验证', const Icon(Icons.auto_stories_outlined), const Icon(Icons.auto_stories)),
   NavigationPage('feed', (c) => L10n.of(c).home, const Icon(Icons.home_outlined), const Icon(Icons.home)),
   NavigationPage('subscriptions', (c) => L10n.of(c).subscriptions, const Icon(Icons.people_outlined),
       const Icon(Icons.people)),
@@ -123,6 +126,8 @@ class _HomeScreenState extends State<_HomeScreen> {
                   return SubscriptionsScreen(
                     scrollController: scrollControllers[index]!,
                   );
+                case 'ziguo-probe':
+                  return buildZiguoProbe(context);
                 case 'trending':
                   return TrendsScreen(
                     scrollController: scrollControllers[index]!,

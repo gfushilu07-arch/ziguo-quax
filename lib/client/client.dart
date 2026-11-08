@@ -1543,7 +1543,7 @@ class TweetWithCard extends Tweet {
 
     // TODO
     tweet.coordinates = null;
-    tweet.truncated = null;
+    tweet.truncated = e['truncated'] as bool?;
     tweet.place = null;
     tweet.possiblySensitiveAppealable = null;
 

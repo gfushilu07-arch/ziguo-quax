@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io' show SocketException, HandshakeException;
 
+import 'package:http/http.dart' show ClientException;
+
 import 'package:quax/catcher/exceptions.dart';
 import 'package:quax/client/client.dart';
 import 'package:uuid/uuid.dart';
@@ -56,6 +58,8 @@ final class QuaXXContentGateway implements XContentGateway, XContentInspector {
     } on HandshakeException {
       throw const ContentAccessException(ContentAccessCode.networkError);
     } on TimeoutException {
+      throw const ContentAccessException(ContentAccessCode.networkError);
+    } on ClientException {
       throw const ContentAccessException(ContentAccessCode.networkError);
     } catch (_) {
       // Raw upstream exceptions can contain response bodies; never pass those to UI/logs.

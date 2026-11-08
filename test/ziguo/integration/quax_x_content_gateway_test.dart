@@ -4,6 +4,7 @@ import 'dart:io' show SocketException;
 import 'package:dart_twitter_api/twitter_api.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:quax/article/article.dart';
 import 'package:quax/catcher/exceptions.dart';
 import 'package:quax/client/client.dart';
 import 'package:quax/ziguo/domain/content_access_exception.dart';
@@ -80,6 +81,49 @@ void main() {
       '甲😀\n乙',
     );
   });
+  test(
+    'preserves GraphQL truncation and rejects incomplete novel text',
+    () async {
+      final parsed = TweetWithCard.fromGraphqlJson({
+        'legacy': {
+          'id_str': '2109404168712823282',
+          'full_text': 'Only a preview…',
+          'truncated': true,
+        },
+      });
+      expect(parsed.truncated, isTrue);
+      final gateway = QuaXXContentGateway(
+        loadTweet: (_) async => status([parsed]),
+      );
+      await expectLater(
+        gateway.resolve(SourceRef.fromJson(refJson())),
+        throwsA(accessError(ContentAccessCode.sourceIncomplete)),
+      );
+      expect(await gateway.inspectPost(parsed.idStr!), isEmpty);
+    },
+  );
+  test(
+    'does not treat long posts or Article previews as complete chapters',
+    () async {
+      for (final post in [
+        tweet()..noteText = 'long post',
+        tweet()..article = Article.fromJson({'previewText': 'article preview'}),
+      ]) {
+        final gateway = QuaXXContentGateway(
+          loadTweet: (_) async => status([post]),
+        );
+        await expectLater(
+          gateway.resolve(SourceRef.fromJson(refJson())),
+          throwsA(accessError(ContentAccessCode.unsupported)),
+        );
+        expect(
+          (await gateway.inspectPost(post.idStr!))
+              .where((ref) => ref.representation == ContentRepresentation.text),
+          isEmpty,
+        );
+      }
+    },
+  );
   test(
     'rejects preview, empty body, missing target and changed media',
     () async {
@@ -160,6 +204,10 @@ void main() {
           ContentAccessCode.rateLimited,
         ),
         (const SocketException('secret host'), ContentAccessCode.networkError),
+        (
+          http.ClientException('secret request'),
+          ContentAccessCode.networkError,
+        ),
         (TimeoutException('secret request'), ContentAccessCode.networkError),
         (NotFoundException(), ContentAccessCode.sourceMissing),
       ];

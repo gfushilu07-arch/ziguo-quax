@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:quax/ziguo/bootstrap/ziguo_navigation.dart';
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:material_ui/material_ui.dart';
@@ -55,6 +56,8 @@ import 'package:app_links/app_links.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 Future<void> checkForUpdates(BuildContext context) async {
+  // P0 builds must never offer QuaX's APK as a Ziguo update.
+  if (ziguoContentProbeEnabled) return;
   Logger.root.info('Checking for updates');
 
   PackageInfo packageInfo = await PackageInfo.fromPlatform();
