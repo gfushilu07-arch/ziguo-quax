@@ -10,19 +10,17 @@
 | 多图帖 1 | https://x.com/quax_tests/status/2095922394959421815 |
 | 多图帖 2 | https://x.com/quax_tests/status/2095918939641356306 |
 
-在线集成测试默认跳过，只有显式 `--dart-define=ZIGUO_LIVE_X=true` 才请求 X。测试复用设备上的应用会话；不要将 Cookie 或账户数据放进命令、仓库或 CI secrets。
+优先在已安装的普通应用中验证：进入“内容验证”，选择对应类型，输入上表链接，解析后勾选目标内容并读取。小说按链接输入顺序阅读；漫画逐页检查；视频必须观察实际播放进度。会话仅保存在设备内，不把 Cookie 或账户数据放进命令、仓库或 CI secrets。
 
-```bash
-./tool/ziguo/build_android.sh --target-platform android-arm64
-cp build/app/outputs/flutter-apk/app-debug.apk build/ziguo-p0-debug.apk
-adb -s DEVICE_ID install -r build/ziguo-p0-debug.apk
-# 在设备内完成正常登录，再执行在线测试。
-fvm flutter test integration_test/ziguo/content_probe_test.dart \
-  -d DEVICE_ID --dart-define=ZIGUO_LIVE_X=true
-# 无论测试成功与否，都恢复普通应用入口；install -r 保留本地会话。
-adb -s DEVICE_ID install -r build/ziguo-p0-debug.apk
-```
+## 自动集成测试的已知安装风险
 
-集成测试会临时替换应用入口，结束后需执行最后一行恢复。不要卸载或清除应用数据来恢复界面，否则会丢失本地会话。示例产物针对 arm64 设备；不同架构使用对应的构建目标。
+`integration_test/ziguo/content_probe_test.dart` 默认跳过，只有显式 `--dart-define=ZIGUO_LIVE_X=true` 才请求 X。测试本身要求视频播放推进至少 500 毫秒、图片成功解码、正文完整非空；报告只打印帖子 ID、内容类型、状态和项目数量。
 
-视频必须实际播放并推进至少 500 毫秒，图片必须成功解码，正文必须完整非空，所有样本类型都通过才算在线测试通过。只打印帖子 ID、内容类型、状态和项目数量；不打印正文或媒体直链。
+2026-11-08 小米复测发现 Flutter 3.47.9 的两项行为：
+
+- `flutter test` 默认在集成测试结束时卸载应用；必须显式使用 `--no-uninstall` 才关闭这一清理行为。
+- 安装更新失败时，Flutter 还会尝试卸载旧应用再安装；`--no-uninstall` 不能阻止这个安装重试分支。该次普通 APK 与新测试 APK 的签名不一致，确实触发了卸载。
+
+因此，不直接对保存真实会话的设备运行裸 `flutter test`。在提供能阻止自动卸载、核对签名的专用运行器之前，此类设备使用普通应用诊断页验收。自动集成入口仅用于隔离的测试环境，须先确认签名一致并使用 `--no-uninstall`。单纯在测试结束后 `adb install -r` 恢复普通 APK，不能恢复已被卸载删除的数据。
+
+`adb install -r` 本身只尝试覆盖安装，失败后应停止，不调用卸载或清除数据作为修复。项目当前没有会话导出或迁移工具，不以读取设备数据库或复制 Cookie 的方式迁移登录。
